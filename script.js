@@ -282,29 +282,30 @@ async function sendMessage() {
 async function callOpenAI(message, apiKey) {
     const now = Date.now();
     
-    // Verificar cooldown activo
-    if (now < rateLimitResetTime) {
-        const waitTime = Math.ceil((rateLimitResetTime - now) / 1000);
-        throw new Error(`Límite de velocidad activo. Espera ${waitTime} segundos.`);
-    }
-
-    // Para la primera solicitud, resetear contadores
+    // NUNCA bloquear si es la primera solicitud
     if (isFirstRequest) {
-        lastRequestTime = 0;
-        requestCount = 0;
+        console.log('🚀 PRIMERA SOLICITUD - Sin límites aplicados');
         isFirstRequest = false;
-        console.log('🚀 Primera solicitud - contadores reseteados');
-    }
-
-    // Controlar solicitudes por minuto (solo si no es la primera)
-    if (!isFirstRequest && now - lastRequestTime < 60000) {
-        if (requestCount >= API_CONFIG.maxRequestsPerMinute) {
-            throw new Error('Límite de solicitudes por minuto alcanzado. Espera 60 segundos.');
+        // No verificar nada más, continuar directamente
+    } else {
+        // Solo verificar límites DESPUÉS de la primera solicitud
+        
+        // Verificar cooldown activo
+        if (now < rateLimitResetTime) {
+            const waitTime = Math.ceil((rateLimitResetTime - now) / 1000);
+            throw new Error(`Límite de velocidad activo. Espera ${waitTime} segundos.`);
         }
-    } else if (now - lastRequestTime >= 60000) {
-        // Reset contador cada minuto
-        requestCount = 0;
-        console.log('⏰ Contador de minuto reseteado');
+        
+        // Controlar solicitudes por minuto
+        if (now - lastRequestTime < 60000) {
+            if (requestCount >= API_CONFIG.maxRequestsPerMinute) {
+                throw new Error('Límite de solicitudes por minuto alcanzado. Espera 60 segundos.');
+            }
+        } else {
+            // Reset contador cada minuto
+            requestCount = 0;
+            console.log('⏰ Contador de minuto reseteado');
+        }
     }
 
     const systemPrompt = `Eres LANG AI, un asistente especializado en:
@@ -576,27 +577,19 @@ function updateApiStatus(status, message) {
 
 // Inicializar estado de API
 function initializeApiStatus() {
-    const now = Date.now();
+    // SIEMPRE empezar con estado limpio
+    rateLimitResetTime = 0;
+    requestCount = 0;
+    lastRequestTime = 0;
+    isFirstRequest = true;
     
-    if (now < rateLimitResetTime) {
-        const waitTime = Math.ceil((rateLimitResetTime - now) / 1000);
-        updateApiStatus('cooldown', `Cooldown: ${waitTime}s`);
-        
-        // Actualizar contador cada segundo
-        const interval = setInterval(() => {
-            const currentWait = Math.ceil((rateLimitResetTime - Date.now()) / 1000);
-            if (currentWait <= 0) {
-                updateApiStatus('ready', 'API Lista');
-                clearInterval(interval);
-            } else {
-                updateApiStatus('cooldown', `Cooldown: ${currentWait}s`);
-            }
-        }, 1000);
-    } else if (!localStorage.getItem('lang_ai_api_key')) {
+    if (!localStorage.getItem('lang_ai_api_key')) {
         updateApiStatus('offline', 'API No Configurada');
     } else {
         updateApiStatus('ready', 'API Lista');
     }
+    
+    console.log('🔄 Estado API inicializado - Sistema listo');
 }
 
 // Nuevo chat
