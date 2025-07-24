@@ -389,19 +389,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 1500);
 });
 
-// Manejar teclas en el textarea
-function handleKeyDown(event) {
-    if (event.key === 'Enter' && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
-    }
-}
-
-// Ajustar altura del textarea
-function adjustTextareaHeight(textarea) {
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-}
+// FUNCIONES MOVIDAS AL EVENTO DOMCONTENTLOADED - NO DUPLICAR
 
 // FUNCIÓN SENDMESSAGE TEMPORAL ELIMINADA - USAR LA VERSIÓN SIMPLIFICADA ABAJO
 
@@ -933,6 +921,12 @@ function generateSmartResponse(config, message) {
     }
     
     return getOfflineResponse(message);
+}
+
+// Función para ajustar altura del textarea
+function adjustTextareaHeight(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
 }
 
 // VERSIÓN SIMPLIFICADA - SIN LÍMITES PARA DIAGNÓSTICO
