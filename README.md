@@ -1,7 +1,8 @@
-# 🧠 LANG AI
+# 🧠 LANG AI v2.1
 ## Tu Asistente Inteligente Personalizado
 
-![LANG AI](https://img.shields.io/badge/LANG%20AI-v1.0-blue?style=for-the-badge&logo=brain)
+![LANG AI](https://img.shields.io/badge/LANG%20AI-v2.1-blue?style=for-the-badge&logo=brain)
+![Status](https://img.shields.io/badge/Status-Estable-brightgreen?style=for-the-badge)
 ![OpenSCAD](https://img.shields.io/badge/OpenSCAD-Compatible-green?style=flat-square)
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow?style=flat-square)
 ![CSS3](https://img.shields.io/badge/CSS3-Modern-blue?style=flat-square)
@@ -21,6 +22,19 @@ LANG AI es tu asistente inteligente personalizado con interfaz similar a ChatGPT
 
 ## ✨ **Características Principales**
 
+### 🚀 **NUEVO v2.1 - Control Inteligente de API**
+- 🎯 **Control automático de límites** - Máximo 3 solicitudes/minuto
+- ⏱️ **Cooldown visual** - Contador en tiempo real del estado
+- 🔄 **Recuperación automática** - Reintentos inteligentes con backoff exponencial
+- 📱 **Modo offline** - Funciona sin internet para tareas básicas
+- 🟢🟡🔴 **Indicador de estado** - API Lista / Cooldown / Error en tiempo real
+
+### 🧠 **Base de Conocimientos Offline**
+- **PLC Micro810** - Modelos 3D con medidas exactas (90x100x62mm)
+- **Arduino UNO** - Carcasas protectoras y proyectos
+- **Sensores de proximidad** - Esquemas de conexión y programación
+- **Respuestas inteligentes** - Reconocimiento de patrones para mejor ayuda
+
 ### 🎨 **Interfaz Moderna**
 - Diseño similar a ChatGPT pero con identidad LANG
 - Colores azules con gradientes profesionales
@@ -36,10 +50,12 @@ LANG AI es tu asistente inteligente personalizado con interfaz similar a ChatGPT
 ### 🛠️ **Funcionalidades Avanzadas**
 - ✅ Generación automática de código OpenSCAD
 - ✅ Descarga directa de archivos .scad
-- ✅ Historial de conversaciones
+- ✅ Historial de conversaciones con autoguardado
 - ✅ Indicadores de escritura en tiempo real
 - ✅ Detección automática de código
 - ✅ Notificaciones elegantes
+- ✅ **NUEVO:** Comandos especiales (/help, /stats, /config)
+- ✅ **NUEVO:** Manejo inteligente de errores HTTP
 
 ---
 
@@ -48,6 +64,7 @@ LANG AI es tu asistente inteligente personalizado con interfaz similar a ChatGPT
 ### 1. **Requisitos**
 - Navegador web moderno (Chrome, Firefox, Edge, Safari)
 - Clave API de OpenAI ([Obtener aquí](https://platform.openai.com/account/api-keys))
+- **RECOMENDADO:** Plan de pago en OpenAI para evitar límites estrictos
 
 ### 2. **Instalación**
 ```bash
@@ -62,7 +79,14 @@ open index.html   # macOS
 ### 3. **Configuración**
 1. Al abrir la aplicación por primera vez, se te pedirá tu clave API
 2. La clave se guarda de forma segura en localStorage
-3. ¡Listo para usar!
+3. **IMPORTANTE:** Observa el indicador de estado (🟢🟡🔴) en la parte inferior
+4. ¡Listo para usar!
+
+### 4. **🆕 Cómo Usar v2.1**
+- **Observa el indicador:** 🟢 = Listo, 🟡 = Espera, 🔴 = Error
+- **Respeta los límites:** Máximo 3 preguntas por minuto
+- **Usa comandos:** Escribe `/help` para ver todos los comandos
+- **Modo offline:** Funciona sin internet para PLC, Arduino, sensores
 
 ---
 
