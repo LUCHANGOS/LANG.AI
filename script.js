@@ -342,21 +342,51 @@ document.addEventListener('DOMContentLoaded', function() {
     const messageInput = document.getElementById('messageInput');
     const sendButton = document.getElementById('sendButton');
     
-    // Habilitar/deshabilitar botón de envío
-    messageInput.addEventListener('input', function() {
-        sendButton.disabled = this.value.trim() === '' || isProcessing;
-    });
-    
     // Configurar API key al inicio - NUEVA API CONFIGURADA
     const newApiKey = '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';
     localStorage.setItem('lang_ai_api_key', newApiKey);
     console.log('🔑 Nueva API key configurada automáticamente');
+    
+    // ARREGLO: Habilitar botón inmediatamente sin restricciones estrictas
+    sendButton.disabled = false;
+    console.log('✅ Botón de envío habilitado');
+    
+    // Habilitar/deshabilitar botón de envío de forma más permisiva
+    messageInput.addEventListener('input', function() {
+        // Solo deshabilitar si está completamente vacío O procesando
+        const isEmpty = this.value.trim() === '';
+        sendButton.disabled = isEmpty || isProcessing;
+        console.log(`📝 Input: "${this.value}" - Botón ${sendButton.disabled ? 'deshabilitado' : 'habilitado'}`);
+    });
+    
+    // Manejar Enter para enviar
+    messageInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            if (!sendButton.disabled) {
+                sendMessage();
+            }
+        }
+    });
+    
+    // También manejar click del botón
+    sendButton.addEventListener('click', function() {
+        if (!sendButton.disabled) {
+            sendMessage();
+        }
+    });
     
     // Mostrar notificación de API actualizada
     setTimeout(() => {
         showNotification('🔑 API Key actualizada - Sistema listo');
         updateApiStatus('ready', 'API Lista');
     }, 1000);
+    
+    // Focus automático en el input
+    setTimeout(() => {
+        messageInput.focus();
+        console.log('🎯 Input enfocado automáticamente');
+    }, 1500);
 });
 
 // Manejar teclas en el textarea
