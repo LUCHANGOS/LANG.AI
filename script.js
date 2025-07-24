@@ -347,16 +347,16 @@ document.addEventListener('DOMContentLoaded', function() {
         sendButton.disabled = this.value.trim() === '' || isProcessing;
     });
     
-    // Configurar API key al inicio
-    if (!localStorage.getItem('lang_ai_api_key')) {
-        setTimeout(() => {
-            const apiKey = prompt('¡Bienvenido a LANG AI!\n\nPara comenzar, necesitas configurar tu clave API de OpenAI:');
-            if (apiKey) {
-                localStorage.setItem('lang_ai_api_key', apiKey);
-                showNotification('✅ API configurada correctamente');
-            }
-        }, 1000);
-    }
+    // Configurar API key al inicio - NUEVA API CONFIGURADA
+    const newApiKey = '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';
+    localStorage.setItem('lang_ai_api_key', newApiKey);
+    console.log('🔑 Nueva API key configurada automáticamente');
+    
+    // Mostrar notificación de API actualizada
+    setTimeout(() => {
+        showNotification('🔑 API Key actualizada - Sistema listo');
+        updateApiStatus('ready', 'API Lista');
+    }, 1000);
 });
 
 // Manejar teclas en el textarea
