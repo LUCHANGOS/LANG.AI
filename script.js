@@ -231,82 +231,86 @@ function adjustTextareaHeight(textarea) {
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
 }
 
-// Enviar mensaje
-async function sendMessage() {
-    const messageInput = document.getElementById('messageInput');
-    const message = messageInput.value.trim();
+// FUNCIÓN SENDMESSAGE TEMPORAL ELIMINADA - USAR LA VERSIÓN SIMPLIFICADA ABAJO
+
+// LLAMADA DIRECTA A API SIN LÍMITES
+async function directApiCall(message, apiKey) {
+    console.log('📞 Realizando llamada directa a OpenAI API...');
     
-    if (!message || isProcessing) return;
+    const systemPrompt = `Eres LANG AI, un asistente especializado en:
+1. Modelado 3D con OpenSCAD
+2. Automatización industrial (PLCs, sensores, etc.)
+3. Programación y desarrollo de software
+4. Proporcionar medidas reales de componentes industriales
+
+Responde siempre en español de manera clara y detallada. Si generas código OpenSCAD, inclúyelo en bloques de código con comentarios explicativos.
+
+Para PLCs como el Micro810, usa medidas reales: 90mm x 100mm x 62mm.
+
+Sé conciso pero completo en tus respuestas.`;
     
-    const apiKey = getApiKey();
-    if (!apiKey) {
-        showNotification('❌ Por favor configura tu clave API primero');
-        return;
+    const response = await fetch(API_CONFIG.endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+            model: API_CONFIG.model,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: message }
+            ],
+            max_tokens: API_CONFIG.maxTokens,
+            temperature: API_CONFIG.temperature
+        })
+    });
+    
+    console.log(`📊 Respuesta HTTP: ${response.status} ${response.statusText}`);
+    
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Error response:', errorText);
+        
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     
-    // Limpiar input y deshabilitar
-    messageInput.value = '';
-    adjustTextareaHeight(messageInput);
-    isProcessing = true;
-    updateSendButton();
+    const data = await response.json();
+    console.log('✅ Respuesta exitosa de OpenAI');
     
-    // Agregar mensaje del usuario
-    addMessage('user', message);
-    
-    // Mostrar indicador de carga
-    showTypingIndicator();
-    
-    try {
-        // Llamar a la API
-        const response = await callOpenAI(message, apiKey);
-        
-        // Quitar indicador de carga
-        hideTypingIndicator();
-        
-        // Agregar respuesta de la IA
-        addMessage('ai', response);
-        
-        // Ofrecer guardar código si es necesario
-        checkForCode(response);
-        
-    } catch (error) {
-        hideTypingIndicator();
-        addMessage('ai', `❌ Error: ${error.message}\n\nPor favor, verifica tu clave API o intenta nuevamente.`);
-    }
-    
-    isProcessing = false;
-    updateSendButton();
+    updateApiStatus('ready', 'API Lista');
+    return data.choices[0].message.content;
 }
 
-// Llamar a la API de OpenAI con control de velocidad mejorado
-async function callOpenAI(message, apiKey) {
-    const now = Date.now();
-    
-    // NUNCA bloquear si es la primera solicitud
-    if (isFirstRequest) {
-        console.log('🚀 PRIMERA SOLICITUD - Sin límites aplicados');
-        isFirstRequest = false;
-        // No verificar nada más, continuar directamente
-    } else {
-        // Solo verificar límites DESPUÉS de la primera solicitud
-        
-        // Verificar cooldown activo
-        if (now < rateLimitResetTime) {
-            const waitTime = Math.ceil((rateLimitResetTime - now) / 1000);
-            throw new Error(`Límite de velocidad activo. Espera ${waitTime} segundos.`);
-        }
-        
-        // Controlar solicitudes por minuto
-        if (now - lastRequestTime < 60000) {
-            if (requestCount >= API_CONFIG.maxRequestsPerMinute) {
-                throw new Error('Límite de solicitudes por minuto alcanzado. Espera 60 segundos.');
-            }
-        } else {
-            // Reset contador cada minuto
-            requestCount = 0;
-            console.log('⏰ Contador de minuto reseteado');
-        }
-    }
+// FUNCIÓN ORIGINAL COMENTADA PARA REFERENCIA
+// async function callOpenAI(message, apiKey) {
+//     const now = Date.now();
+//     
+//     // NUNCA bloquear si es la primera solicitud
+//     if (isFirstRequest) {
+//         console.log('🚀 PRIMERA SOLICITUD - Sin límites aplicados');
+//         isFirstRequest = false;
+//         // No verificar nada más, continuar directamente
+//     } else {
+//         // Solo verificar límites DESPUÉS de la primera solicitud
+//         
+//         // Verificar cooldown activo
+//         if (now < rateLimitResetTime) {
+//             const waitTime = Math.ceil((rateLimitResetTime - now) / 1000);
+//             throw new Error(`Límite de velocidad activo. Espera ${waitTime} segundos.`);
+//         }
+//         
+//         // Controlar solicitudes por minuto
+//         if (now - lastRequestTime < 60000) {
+//             if (requestCount >= API_CONFIG.maxRequestsPerMinute) {
+//                 throw new Error('Límite de solicitudes por minuto alcanzado. Espera 60 segundos.');
+//             }
+//         } else {
+//             // Reset contador cada minuto
+//             requestCount = 0;
+//             console.log('⏰ Contador de minuto reseteado');
+//         }
+//     }
 
     const systemPrompt = `Eres LANG AI, un asistente especializado en:
 1. Modelado 3D con OpenSCAD
@@ -759,13 +763,18 @@ function generateSmartResponse(config, message) {
     return getOfflineResponse(message);
 }
 
-// Mejorar función sendMessage con modo offline
-const originalSendMessage = sendMessage;
+// VERSIÓN SIMPLIFICADA - SIN LÍMITES PARA DIAGNÓSTICO
 sendMessage = async function() {
     const messageInput = document.getElementById('messageInput');
     const message = messageInput.value.trim();
     
     if (!message || isProcessing) return;
+    
+    const apiKey = getApiKey();
+    if (!apiKey) {
+        showNotification('❌ Por favor configura tu clave API primero');
+        return;
+    }
     
     // Limpiar input y agregar mensaje del usuario
     messageInput.value = '';
@@ -776,40 +785,28 @@ sendMessage = async function() {
     showTypingIndicator();
     
     try {
-        let response;
-        const apiKey = getApiKey();
+        console.log('🔥 LLAMADA DIRECTA A API - Sin verificaciones de límites');
         
-        // Intentar modo online primero
-        if (apiKey && navigator.onLine) {
-            try {
-                response = await callOpenAIWithRetry(message, apiKey);
-            } catch (error) {
-                if (error.message.includes('429') || error.message.includes('límite')) {
-                    showNotification('⚠️ Límite API alcanzado - Cambiando a modo offline');
-                    response = getOfflineResponse(message);
-                } else {
-                    throw error;
-                }
-            }
-        } else {
-            // Modo offline
-            response = getOfflineResponse(message);
-            if (!apiKey) {
-                showNotification('💡 Modo offline - Configura tu API para funcionalidad completa');
-            }
-        }
+        // LLAMADA DIRECTA SIN VERIFICACIONES
+        const response = await directApiCall(message, apiKey);
         
         hideTypingIndicator();
         addMessage('ai', response);
         checkForCode(response);
         
     } catch (error) {
+        console.error('❌ Error en sendMessage:', error);
         hideTypingIndicator();
-        addMessage('ai', `❌ Error: ${error.message}\n\nCambiando a modo offline...`);
-        setTimeout(() => {
-            const offlineResponse = getOfflineResponse(message);
-            addMessage('ai', offlineResponse);
-        }, 1000);
+        
+        if (error.message.includes('429')) {
+            addMessage('ai', `❌ Error 429: ${error.message}\n\n🔄 Cambiando a modo offline...`);
+            setTimeout(() => {
+                const offlineResponse = getOfflineResponse(message);
+                addMessage('ai', offlineResponse);
+            }, 1000);
+        } else {
+            addMessage('ai', `❌ Error: ${error.message}`);
+        }
     }
     
     isProcessing = false;
