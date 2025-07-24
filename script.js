@@ -26,8 +26,23 @@ const API_CONFIG = {
     cooldownTime: 20000 // 20 segundos de cooldown después de error 429
 };
 
-// Base de conocimientos offline para LANG AI
+// Base de conocimientos offline para LANG AI - AMPLIADA
 const OFFLINE_DATABASE = {
+    'hola': {
+        type: 'greeting',
+        response: `# ¡Hola! 👋
+
+¡Bienvenido a LANG AI en modo offline! Aunque no tengo acceso a internet, puedo ayudarte con:
+
+## 🎯 Especialidades disponibles:
+- **Modelado 3D** con OpenSCAD
+- **Automatización Industrial** (PLCs, sensores)
+- **Programación** básica
+- **Documentación técnica**
+
+¿En qué puedo ayudarte?`
+    },
+    
     'plc micro810': {
         type: '3d_model',
         response: `# Modelo 3D del PLC Allen-Bradley Micro810
@@ -135,6 +150,133 @@ module arduino_case() {
 arduino_case();
 \`\`\``,
         tags: ['arduino', 'uno', 'carcasa', '3d', 'protection']
+    },
+    
+    'servo motor': {
+        type: '3d_model',
+        response: `# Soporte para Servo Motor SG90
+
+## Especificaciones del SG90:
+- **Dimensiones**: 22.2 x 11.8 x 31mm
+- **Peso**: 9g
+- **Torque**: 1.8kg⋅cm (4.8V)
+- **Ángulo**: 180° (±90°)
+
+\`\`\`openscad
+// Soporte Servo SG90
+module servo_mount() {
+    difference() {
+        // Base del soporte
+        cube([30, 20, 6]);
+        
+        // Agujeros para tornillos servo
+        translate([4, 4, -1]) cylinder(h=8, r=1);
+        translate([26, 4, -1]) cylinder(h=8, r=1);
+        translate([4, 16, -1]) cylinder(h=8, r=1);
+        translate([26, 16, -1]) cylinder(h=8, r=1);
+    }
+    
+    // Paredes laterales
+    translate([0, -2, 0]) cube([30, 2, 15]);
+    translate([0, 20, 0]) cube([30, 2, 15]);
+}
+
+servo_mount();
+\`\`\``,
+        tags: ['servo', 'sg90', 'motor', '3d', 'soporte']
+    },
+    
+    'led strip': {
+        type: 'automation',
+        response: `# Control de Tira LED con Arduino/PLC
+
+## Conexión Tira LED RGB (WS2812B):
+- **VCC**: 5V (fuente externa para >10 LEDs)
+- **GND**: Común con Arduino/PLC
+- **DIN**: Pin digital (Arduino: D6, PLC: salida PWM)
+
+## Código Arduino:
+\`\`\`cpp
+#include <FastLED.h>
+
+#define LED_PIN     6
+#define NUM_LEDS    30
+#define BRIGHTNESS  64
+#define LED_TYPE    WS2812B
+#define COLOR_ORDER GRB
+
+CRGB leds[NUM_LEDS];
+
+void setup() {
+    FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+    FastLED.setBrightness(BRIGHTNESS);
+}
+
+void loop() {
+    // Efecto arcoíris
+    fill_rainbow(leds, NUM_LEDS, 0, 7);
+    FastLED.show();
+    delay(50);
+}
+\`\`\`
+
+**⚡ Consumo**: ~60mA por LED a máximo brillo`,
+        tags: ['led', 'strip', 'ws2812b', 'arduino', 'rgb']
+    },
+    
+    'raspberry pi': {
+        type: '3d_model',
+        response: `# Carcasa Raspberry Pi 4
+
+## Especificaciones Pi 4:
+- **Dimensiones**: 85mm x 56mm x 17mm
+- **Puertos**: USB-C, 2×USB3, 2×USB2, HDMI×2
+- **Refrigeración**: Ventilador 30x30mm recomendado
+
+\`\`\`openscad
+// Carcasa Raspberry Pi 4
+module pi4_case() {
+    difference() {
+        // Cuerpo principal
+        cube([90, 61, 25]);
+        
+        // Cavidad para Pi
+        translate([2.5, 2.5, 2]) {
+            cube([85, 56, 20]);
+        }
+        
+        // Puerto USB-C (alimentación)
+        translate([-1, 10.6, 8]) cube([5, 9, 3]);
+        
+        // HDMI ports
+        translate([-1, 25, 8]) cube([5, 15, 8]);
+        translate([-1, 43, 8]) cube([5, 15, 8]);
+        
+        // USB ports
+        translate([85, 9, 8]) cube([8, 13, 6]);
+        translate([85, 27, 8]) cube([8, 13, 6]);
+        
+        // Ethernet
+        translate([85, 45, 8]) cube([8, 16, 14]);
+        
+        // Ventilación
+        for(x = [10:10:80]) {
+            for(y = [10:10:50]) {
+                translate([x, y, -1]) cylinder(h=4, r=1.5);
+            }
+        }
+    }
+    
+    // Soportes GPIO
+    translate([5, 5, 2]) cylinder(h=3, r=1.5);
+    translate([63, 5, 2]) cylinder(h=3, r=1.5);
+    translate([5, 51, 2]) cylinder(h=3, r=1.5);
+    translate([63, 51, 2]) cylinder(h=3, r=1.5);
+}
+
+pi4_case();
+\`\`\``,
+        tags: ['raspberry', 'pi4', 'carcasa', '3d', 'ventilacion']
     },
     
     'sensor proximidad': {
