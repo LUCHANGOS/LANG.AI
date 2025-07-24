@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LANG AI - Tu Asistente Inteligente</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-brain"></i>
+                    <span>LANG AI</span>
+                </div>
+                <button class="new-chat-btn" onclick="newChat()">
+                    <i class="fas fa-plus"></i>
+                    Nueva conversación
+                </button>
+            </div>
+            
+            <div class="chat-history">
+                <div class="chat-item active" onclick="selectChat(this)">
+                    <i class="fas fa-message"></i>
+                    <span>Conversación actual</span>
+                </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-details">
+                        <span class="username">Usuario LANG</span>
+                        <span class="plan">Plan Profesional</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="main-content">
+            <div class="chat-header">
+                <h1>LANG AI</h1>
+                <p>Tu asistente inteligente para modelado 3D y más</p>
+            </div>
+
+            <div class="chat-container" id="chatContainer">
+                <div class="welcome-message">
+                    <div class="lang-logo">
+                        <i class="fas fa-cube"></i>
+                    </div>
+                    <h2>¡Hola! Soy LANG AI</h2>
+                    <p>Tu asistente especializado en modelado 3D, automatización industrial y desarrollo de software.</p>
+                    
+                    <div class="capabilities">
+                        <div class="capability-card">
+                            <i class="fas fa-cube"></i>
+                            <h3>Modelado 3D</h3>
+                            <p>Genera código OpenSCAD para cualquier modelo 3D</p>
+                        </div>
+                        <div class="capability-card">
+                            <i class="fas fa-microchip"></i>
+                            <h3>Automatización</h3>
+                            <p>Ayuda con PLCs, sensores y sistemas industriales</p>
+                        </div>
+                        <div class="capability-card">
+                            <i class="fas fa-code"></i>
+                            <h3>Programación</h3>
+                            <p>Desarrollo de software y scripting avanzado</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Escribe tu mensaje aquí... (Ej: 'Crea un modelo 3D de un PLC Micro810')"
+                        rows="1"
+                        onkeydown="handleKeyDown(event)"
+                        oninput="adjustTextareaHeight(this)"
+                    ></textarea>
+                    <button id="sendButton" onclick="sendMessage()" disabled>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <span>LANG AI puede cometer errores. Verifica la información importante.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-brain fa-pulse"></i>
+            <p>LANG AI está pensando...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
