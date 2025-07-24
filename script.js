@@ -12,6 +12,7 @@ let autoSaveEnabled = true;
 let lastRequestTime = 0;
 let requestCount = 0;
 let rateLimitResetTime = 0;
+let isFirstRequest = true; // Nueva variable para manejar primera solicitud
 
 // Configuración de la API
 const API_CONFIG = {
@@ -279,20 +280,31 @@ async function sendMessage() {
 
 // Llamar a la API de OpenAI con control de velocidad mejorado
 async function callOpenAI(message, apiKey) {
-    // Verificar límite de velocidad
     const now = Date.now();
+    
+    // Verificar cooldown activo
     if (now < rateLimitResetTime) {
         const waitTime = Math.ceil((rateLimitResetTime - now) / 1000);
         throw new Error(`Límite de velocidad activo. Espera ${waitTime} segundos.`);
     }
 
-    // Controlar solicitudes por minuto
-    if (now - lastRequestTime < 60000) {
+    // Para la primera solicitud, resetear contadores
+    if (isFirstRequest) {
+        lastRequestTime = 0;
+        requestCount = 0;
+        isFirstRequest = false;
+        console.log('🚀 Primera solicitud - contadores reseteados');
+    }
+
+    // Controlar solicitudes por minuto (solo si no es la primera)
+    if (!isFirstRequest && now - lastRequestTime < 60000) {
         if (requestCount >= API_CONFIG.maxRequestsPerMinute) {
             throw new Error('Límite de solicitudes por minuto alcanzado. Espera 60 segundos.');
         }
-    } else {
+    } else if (now - lastRequestTime >= 60000) {
+        // Reset contador cada minuto
         requestCount = 0;
+        console.log('⏰ Contador de minuto reseteado');
     }
 
     const systemPrompt = `Eres LANG AI, un asistente especializado en:
@@ -331,6 +343,7 @@ Sé conciso pero completo en tus respuestas.`;
     // Actualizar contadores
     lastRequestTime = now;
     requestCount++;
+    console.log(`📊 Solicitud ${requestCount}/${API_CONFIG.maxRequestsPerMinute} en este minuto`);
     
     if (!response.ok) {
         if (response.status === 429) {
