@@ -9,15 +9,20 @@ let isOnline = navigator.onLine;
 let currentTheme = 'light';
 let voiceEnabled = false;
 let autoSaveEnabled = true;
+let lastRequestTime = 0;
+let requestCount = 0;
+let rateLimitResetTime = 0;
 
 // Configuración de la API
 const API_CONFIG = {
     endpoint: 'https://api.openai.com/v1/chat/completions',
     model: 'gpt-4o-mini',
-    maxTokens: 3000,
+    maxTokens: 2000, // Reducido para evitar límites
     temperature: 0.3,
-    retryAttempts: 3,
-    retryDelay: 1000
+    retryAttempts: 5, // Más reintentos
+    retryDelay: 2000, // Más tiempo entre reintentos
+    maxRequestsPerMinute: 3, // Límite de solicitudes por minuto
+    cooldownTime: 20000 // 20 segundos de cooldown después de error 429
 };
 
 // Base de conocimientos offline para LANG AI
@@ -272,8 +277,24 @@ async function sendMessage() {
     updateSendButton();
 }
 
-// Llamar a la API de OpenAI
+// Llamar a la API de OpenAI con control de velocidad mejorado
 async function callOpenAI(message, apiKey) {
+    // Verificar límite de velocidad
+    const now = Date.now();
+    if (now < rateLimitResetTime) {
+        const waitTime = Math.ceil((rateLimitResetTime - now) / 1000);
+        throw new Error(`Límite de velocidad activo. Espera ${waitTime} segundos.`);
+    }
+
+    // Controlar solicitudes por minuto
+    if (now - lastRequestTime < 60000) {
+        if (requestCount >= API_CONFIG.maxRequestsPerMinute) {
+            throw new Error('Límite de solicitudes por minuto alcanzado. Espera 60 segundos.');
+        }
+    } else {
+        requestCount = 0;
+    }
+
     const systemPrompt = `Eres LANG AI, un asistente especializado en:
 1. Modelado 3D con OpenSCAD
 2. Automatización industrial (PLCs, sensores, etc.)
@@ -282,7 +303,12 @@ async function callOpenAI(message, apiKey) {
 
 Responde siempre en español de manera clara y detallada. Si generas código OpenSCAD, inclúyelo en bloques de código con comentarios explicativos.
 
-Para PLCs como el Micro810, usa medidas reales: 90mm x 100mm x 62mm.`;
+Para PLCs como el Micro810, usa medidas reales: 90mm x 100mm x 62mm.
+
+Sé conciso pero completo en tus respuestas.`;
+    
+    // Limitar historial para evitar tokens excesivos
+    const limitedHistory = chatHistory.slice(-6); // Solo últimos 6 mensajes
     
     const response = await fetch(API_CONFIG.endpoint, {
         method: 'POST',
@@ -294,7 +320,7 @@ Para PLCs como el Micro810, usa medidas reales: 90mm x 100mm x 62mm.`;
             model: API_CONFIG.model,
             messages: [
                 { role: 'system', content: systemPrompt },
-                ...chatHistory.map(msg => ({ role: msg.role, content: msg.content })),
+                ...limitedHistory.map(msg => ({ role: msg.role, content: msg.content })),
                 { role: 'user', content: message }
             ],
             max_tokens: API_CONFIG.maxTokens,
@@ -302,18 +328,35 @@ Para PLCs como el Micro810, usa medidas reales: 90mm x 100mm x 62mm.`;
         })
     });
     
+    // Actualizar contadores
+    lastRequestTime = now;
+    requestCount++;
+    
     if (!response.ok) {
         if (response.status === 429) {
-            throw new Error('Demasiadas solicitudes. Espera unos segundos e intenta nuevamente.');
+            // Activar cooldown
+            rateLimitResetTime = now + API_CONFIG.cooldownTime;
+            const waitTime = Math.ceil(API_CONFIG.cooldownTime / 1000);
+            updateApiStatus('cooldown', `Cooldown: ${waitTime}s`);
+            throw new Error(`Límite de velocidad alcanzado. Sistema en cooldown por ${waitTime} segundos.`);
         } else if (response.status === 401) {
+            updateApiStatus('error', 'API Inválida');
             localStorage.removeItem('lang_ai_api_key');
             throw new Error('Clave API inválida. Por favor, configúrala nuevamente.');
+        } else if (response.status === 403) {
+            updateApiStatus('error', 'Acceso Denegado');
+            throw new Error('Acceso denegado. Verifica tu plan de OpenAI.');
+        } else if (response.status >= 500) {
+            updateApiStatus('error', 'Error Servidor');
+            throw new Error('Error del servidor de OpenAI. Intenta más tarde.');
         } else {
-            throw new Error(`Error del servidor: ${response.status}`);
+            updateApiStatus('error', `Error ${response.status}`);
+            throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
         }
     }
     
     const data = await response.json();
+    updateApiStatus('ready', 'API Lista');
     return data.choices[0].message.content;
 }
 
@@ -505,6 +548,44 @@ function updateSendButton() {
     }
 }
 
+// Actualizar estado visual de la API
+function updateApiStatus(status, message) {
+    const apiStatus = document.getElementById('apiStatus');
+    if (!apiStatus) return;
+    
+    // Remover todas las clases de estado
+    apiStatus.classList.remove('ready', 'cooldown', 'error', 'offline');
+    
+    // Agregar nueva clase y actualizar contenido
+    apiStatus.classList.add(status);
+    apiStatus.innerHTML = `<i class="fas fa-circle"></i><span>${message}</span>`;
+}
+
+// Inicializar estado de API
+function initializeApiStatus() {
+    const now = Date.now();
+    
+    if (now < rateLimitResetTime) {
+        const waitTime = Math.ceil((rateLimitResetTime - now) / 1000);
+        updateApiStatus('cooldown', `Cooldown: ${waitTime}s`);
+        
+        // Actualizar contador cada segundo
+        const interval = setInterval(() => {
+            const currentWait = Math.ceil((rateLimitResetTime - Date.now()) / 1000);
+            if (currentWait <= 0) {
+                updateApiStatus('ready', 'API Lista');
+                clearInterval(interval);
+            } else {
+                updateApiStatus('cooldown', `Cooldown: ${currentWait}s`);
+            }
+        }, 1000);
+    } else if (!localStorage.getItem('lang_ai_api_key')) {
+        updateApiStatus('offline', 'API No Configurada');
+    } else {
+        updateApiStatus('ready', 'API Lista');
+    }
+}
+
 // Nuevo chat
 function newChat() {
     const chatContainer = document.getElementById('chatContainer');
@@ -558,11 +639,12 @@ function configureApiKey() {
     const apiKey = prompt('Ingresa tu nueva clave API de OpenAI:');
     if (apiKey) {
         localStorage.setItem('lang_ai_api_key', apiKey);
+        updateApiStatus('ready', 'API Lista');
         showNotification('✅ API actualizada correctamente');
     }
 }
 
-// Agregar CSS para typing indicator
+// Agregar CSS para typing indicator y estado de API
 const style = document.createElement('style');
 style.textContent = `
 .typing-dots {
@@ -588,6 +670,41 @@ style.textContent = `
 @keyframes slideIn {
     from { transform: translateX(100%); opacity: 0; }
     to { transform: translateX(0); opacity: 1; }
+}
+
+.api-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85em;
+    padding: 4px 8px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.api-status.ready {
+    color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.api-status.cooldown {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.api-status.error {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.api-status.offline {
+    color: #6b7280;
+    background: rgba(107, 114, 128, 0.1);
+}
+
+.api-status i {
+    font-size: 8px;
 }
 `;
 document.head.appendChild(style);
@@ -693,16 +810,32 @@ sendMessage = async function() {
     updateSendButton();
 };
 
-// Función mejorada de llamada API con reintentos
+// Función mejorada de llamada API con reintentos inteligentes
 async function callOpenAIWithRetry(message, apiKey, attempt = 1) {
     try {
         return await callOpenAI(message, apiKey);
     } catch (error) {
-        if (attempt < API_CONFIG.retryAttempts && error.message.includes('429')) {
-            showNotification(`🔄 Reintentando (${attempt}/${API_CONFIG.retryAttempts})...`);
-            await new Promise(resolve => setTimeout(resolve, API_CONFIG.retryDelay * attempt));
+        console.log(`Intento ${attempt} falló:`, error.message);
+        
+        // No reintentar si es error de autenticación o configuración
+        if (error.message.includes('inválida') || error.message.includes('denegado')) {
+            throw error;
+        }
+        
+        // Reintentar solo para errores de red o límites de velocidad
+        if (attempt < API_CONFIG.retryAttempts && 
+            (error.message.includes('límite') || 
+             error.message.includes('servidor') || 
+             error.message.includes('429'))) {
+            
+            const delay = API_CONFIG.retryDelay * Math.pow(2, attempt - 1); // Backoff exponencial
+            const waitSeconds = Math.ceil(delay / 1000);
+            
+            showNotification(`🔄 Reintentando en ${waitSeconds}s (${attempt}/${API_CONFIG.retryAttempts})...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
             return callOpenAIWithRetry(message, apiKey, attempt + 1);
         }
+        
         throw error;
     }
 }
@@ -894,6 +1027,9 @@ addMessage = function(sender, content) {
 
 // Inicialización avanzada
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar estado de API
+    setTimeout(initializeApiStatus, 500);
+    
     // Cargar chats guardados al inicio
     setTimeout(loadSavedChats, 1000);
     
